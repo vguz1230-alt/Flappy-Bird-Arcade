@@ -1,82 +1,12 @@
 import arcade
 import arcade.gui
 from gamescreen import GameView
+from settings import SettingsView
+from styles import BUTTON_STYLE, DIALOG_YES_STYLE, DIALOG_NO_STYLE
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 SCREEN_TITLE = "Главное меню"
-
-BUTTON_STYLE = {
-    "normal": arcade.gui.UIFlatButton.UIStyle(
-        font_size=24,
-        font_name="Arial",
-        font_color=arcade.color.WHITE,
-        bg=arcade.color.DARK_BLUE_GRAY,
-        border_width=2
-    ),
-    "hover": arcade.gui.UIFlatButton.UIStyle(
-        font_size=24,
-        font_name="Arial",
-        font_color=arcade.color.WHITE,
-        bg=arcade.color.DARK_SLATE_BLUE,
-        border_width=2
-    ),
-    "press": arcade.gui.UIFlatButton.UIStyle(
-        font_size=24,
-        font_name="Arial",
-        font_color=arcade.color.WHITE,
-        bg=arcade.color.DARK_GRAY,
-        border_width=2
-    ),
-}
-
-DIALOG_YES_STYLE = {
-    "normal": arcade.gui.UIFlatButton.UIStyle(
-        font_size=20,
-        font_name="Arial",
-        font_color=arcade.color.WHITE,
-        bg=arcade.color.DARK_RED,
-        border_width=2
-    ),
-    "hover": arcade.gui.UIFlatButton.UIStyle(
-        font_size=20,
-        font_name="Arial",
-        font_color=arcade.color.WHITE,
-        bg=arcade.color.RED,
-        border_width=2
-    ),
-    "press": arcade.gui.UIFlatButton.UIStyle(
-        font_size=20,
-        font_name="Arial",
-        font_color=arcade.color.WHITE,
-        bg=arcade.color.MAROON,
-        border_width=2
-    ),
-}
-
-DIALOG_NO_STYLE = {
-    "normal": arcade.gui.UIFlatButton.UIStyle(
-        font_size=20,
-        font_name="Arial",
-        font_color=arcade.color.WHITE,
-        bg=arcade.color.DARK_GRAY,
-        border_width=2
-    ),
-    "hover": arcade.gui.UIFlatButton.UIStyle(
-        font_size=20,
-        font_name="Arial",
-        font_color=arcade.color.WHITE,
-        bg=arcade.color.GRAY,
-        border_width=2
-    ),
-    "press": arcade.gui.UIFlatButton.UIStyle(
-        font_size=20,
-        font_name="Arial",
-        font_color=arcade.color.WHITE,
-        bg=arcade.color.DIM_GRAY,
-        border_width=2
-    ),
-}
 
 class MenuView(arcade.View):
     def __init__(self):
@@ -130,7 +60,8 @@ class MenuView(arcade.View):
         self.window.show_view(game_view)
 
     def on_click_settings(self, event):
-        print("Нажата кнопка НАСТРОЙКИ")
+        settings_view = SettingsView()
+        self.window.show_view(settings_view)
 
     def on_click_exit(self, event):
         if self.exit_dialog is not None:
