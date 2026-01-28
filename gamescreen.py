@@ -1,24 +1,35 @@
 import arcade
 import random
+import json
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
-GRAVITY = 0.4
-JUMP_POWER = 9
-PIPE_SPEED = 3.8
-PIPE_GAP = 180
-PIPE_WIDTH = 90
-PIPE_INTERVAL = 1.9
+
+# Базовые значения
+BASE_GRAVITY = 0.4
+BASE_JUMP_POWER = 9
+BASE_PIPE_SPEED = 3.8
+BASE_PIPE_GAP = 180
+BASE_PIPE_WIDTH = 90
+BASE_PIPE_INTERVAL = 1.9
 
 class GameView(arcade.View):
     def __init__(self):
         super().__init__()
+
+        self.load_settings()
+
         arcade.set_background_color(arcade.color.SKY_BLUE)
 
-        self.player = arcade.Sprite(
-            ":resources:images/animated_characters/robot/robot_idle.png",
-            scale=0.6
-        )
+        # Выбор скина в зависимости от настроек
+        skin_paths = {
+            "robot": ":resources:images/animated_characters/robot/robot_idle.png",
+            "bird": ":resources:images/birds/bluebird-midflap.png",
+            "plane": ":resources:images/space_shooter/playerShip1_blue.png"
+        }
+        skin_path = skin_paths.get(self.skin, skin_paths["robot"])
+
+        self.player = arcade.Sprite(skin_path, scale=0.6)
         self.player.center_x = 250
         self.player.center_y = SCREEN_HEIGHT // 2
         self.player.velocity_y = 0
@@ -79,6 +90,33 @@ class GameView(arcade.View):
             anchor_y="center"
         )
 
+    def load_settings(self):
+        try:
+            with open("settings.txt", "r", encoding="utf-8") as f:
+                settings = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            settings = {
+                "difficulty": "medium",
+                "volume": 80,
+                "skin": "robot"
+            }
+
+        diff = settings.get("difficulty", "medium")
+        if diff == "easy":
+            self.gravity = 0.3
+            self.pipe_interval = 2.5
+        elif diff == "hard":
+            self.gravity = 0.6
+            self.pipe_interval = 1.5
+        else:
+            self.gravity = BASE_GRAVITY
+            self.pipe_interval = BASE_PIPE_INTERVAL
+
+        self.volume = settings.get("volume", 80)
+        self.skin = settings.get("skin", "robot")
+
+        print(f"Загружены настройки: сложность={diff}, громкость={self.volume}, скин={self.skin}")
+
     def setup(self):
         self.player.center_y = SCREEN_HEIGHT // 2
         self.player.velocity_y = 0
@@ -97,7 +135,7 @@ class GameView(arcade.View):
         if not self.game_started or self.game_over:
             return
 
-        self.player.velocity_y -= GRAVITY
+        self.player.velocity_y -= self.gravity
         self.player.center_y += self.player.velocity_y
 
         if self.player.top < 0 or self.player.bottom > SCREEN_HEIGHT:
@@ -105,33 +143,30 @@ class GameView(arcade.View):
             self.final_score_text.text = f"Счёт: {self.score}"
             return
 
-        # Двигаем все трубы вручную
         for pipe in self.pipe_list:
-            pipe.center_x -= PIPE_SPEED
+            pipe.center_x -= BASE_PIPE_SPEED
 
-        # Удаляем пары труб, которые ушли за левый край
         while len(self.pipe_list) >= 2 and self.pipe_list[0].right < 0:
             self.pipe_list.pop(0)
             self.pipe_list.pop(0)
             self.score += 1
             self.score_text.text = str(self.score)
 
-        # Генерация новых труб
         self.last_update_time += delta_time
-        if self.last_update_time - self.last_pipe_time > PIPE_INTERVAL:
+        if self.last_update_time - self.last_pipe_time > self.pipe_interval:
             self.spawn_pipe()
             self.last_pipe_time = self.last_update_time
 
         self.check_collisions()
 
     def spawn_pipe(self):
-        gap_y = random.randint(140, SCREEN_HEIGHT - 140 - PIPE_GAP)
+        gap_y = random.randint(140, SCREEN_HEIGHT - 140 - BASE_PIPE_GAP)
 
-        top_pipe = arcade.SpriteSolidColor(PIPE_WIDTH, SCREEN_HEIGHT, arcade.color.FOREST_GREEN)
+        top_pipe = arcade.SpriteSolidColor(BASE_PIPE_WIDTH, SCREEN_HEIGHT, arcade.color.FOREST_GREEN)
         top_pipe.center_x = SCREEN_WIDTH + 200
-        top_pipe.bottom = gap_y + PIPE_GAP
+        top_pipe.bottom = gap_y + BASE_PIPE_GAP
 
-        bottom_pipe = arcade.SpriteSolidColor(PIPE_WIDTH, SCREEN_HEIGHT, arcade.color.FOREST_GREEN)
+        bottom_pipe = arcade.SpriteSolidColor(BASE_PIPE_WIDTH, SCREEN_HEIGHT, arcade.color.FOREST_GREEN)
         bottom_pipe.center_x = SCREEN_WIDTH + 200
         bottom_pipe.top = gap_y
 
@@ -156,7 +191,7 @@ class GameView(arcade.View):
             return
 
         if symbol in (arcade.key.SPACE, arcade.key.UP):
-            self.player.velocity_y = JUMP_POWER
+            self.player.velocity_y = BASE_JUMP_POWER
 
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
         if self.game_over:
@@ -169,7 +204,7 @@ class GameView(arcade.View):
             return
 
         if button == arcade.MOUSE_BUTTON_LEFT:
-            self.player.velocity_y = JUMP_POWER
+            self.player.velocity_y = BASE_JUMP_POWER
 
     def on_draw(self):
         self.clear()
