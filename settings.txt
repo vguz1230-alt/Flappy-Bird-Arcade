@@ -1,0 +1,5 @@
+{
+    "difficulty": "medium",
+    "volume": 68,
+    "skin": "plane"
+}
