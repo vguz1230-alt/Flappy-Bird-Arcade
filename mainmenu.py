@@ -3,9 +3,8 @@ import arcade.gui
 from gamescreen import GameView
 from settings import SettingsView
 from styles import BUTTON_STYLE, DIALOG_YES_STYLE, DIALOG_NO_STYLE
+import json
 
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
 SCREEN_TITLE = "Главное меню"
 
 class MenuView(arcade.View):
@@ -54,6 +53,29 @@ class MenuView(arcade.View):
         self.exit_dialog = None
         self.overlay = None
 
+        # Загружаем имя игрока из файла настроек
+        self.player_name = self.load_player_name()
+
+        # Текст имени в нижнем левом углу
+        self.name_text = arcade.Text(
+            self.player_name,
+            x=40,
+            y=60,                     # отступ снизу ~60 пикселей
+            color=arcade.color.WHITE,
+            font_size=28,
+            font_name="Arial",
+            anchor_x="left",
+            anchor_y="bottom"
+        )
+
+    def load_player_name(self):
+        try:
+            with open("settings.txt", "r", encoding="utf-8") as f:
+                settings = json.load(f)
+                return settings.get("player_name", "Игрок")
+        except (FileNotFoundError, json.JSONDecodeError):
+            return "Игрок"
+
     def on_click_play(self, event):
         game_view = GameView()
         game_view.setup()
@@ -69,9 +91,9 @@ class MenuView(arcade.View):
 
         self.v_box.visible = False
 
-        overlay = arcade.gui.UIWidget(width=SCREEN_WIDTH, height=SCREEN_HEIGHT)
+        overlay = arcade.gui.UIWidget(width=self.window.width, height=self.window.height)
         def render_overlay(surface):
-            arcade.draw_lbwh_rectangle_filled(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (0, 0, 0, 180))
+            arcade.draw_lbwh_rectangle_filled(0, 0, self.window.width, self.window.height, (0, 0, 0, 180))
         overlay.do_render = render_overlay
 
         dialog_content = arcade.gui.UIBoxLayout(
@@ -147,6 +169,9 @@ class MenuView(arcade.View):
     def on_show_view(self):
         arcade.set_background_color(arcade.color.DARK_SLATE_GRAY)
         self.manager.enable()
+        # Обновляем имя при каждом показе меню (на случай изменения в настройках)
+        self.player_name = self.load_player_name()
+        self.name_text.text = self.player_name
 
     def on_hide_view(self):
         self.manager.disable()
@@ -155,11 +180,12 @@ class MenuView(arcade.View):
         self.clear()
         arcade.draw_text(
             SCREEN_TITLE,
-            SCREEN_WIDTH // 2,
-            SCREEN_HEIGHT - 120,
+            self.window.width // 2,
+            self.window.height - 120,
             arcade.color.WHITE,
             font_size=52,
             anchor_x="center",
             font_name="Kenney Future"
         )
         self.manager.draw()
+        self.name_text.draw()  # ← имя игрока внизу слева
