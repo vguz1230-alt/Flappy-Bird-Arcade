@@ -4,10 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="00232a77-57ce-45dc-a9d9-118b36168fb5" name="Changes" comment="-добавлен полноэкранный режим&#10;-изменён баланс режимов сложности &#10;-доработан рандомайзер зазоров в трубах для сложности hard&#10;-исправлен дизайн окна настроек">
+    <list default="true" id="00232a77-57ce-45dc-a9d9-118b36168fb5" name="Changes" comment="-добавлены новые скины на персонажа&#10;-добавлены анимации полета у персонажа">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gamescreen.py" beforeDir="false" afterPath="$PROJECT_DIR$/gamescreen.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/settings.txt" beforeDir="false" afterPath="$PROJECT_DIR$/settings.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -133,11 +131,20 @@
       <option name="project" value="LOCAL" />
       <updated>1770754292042</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="-добавлены новые скины на персонажа&#10;-добавлены анимации полета у персонажа">
+      <option name="closed" value="true" />
+      <created>1770832806237</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1770832806237</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="-добавлен полноэкранный режим&#10;-изменён баланс режимов сложности &#10;-доработан рандомайзер зазоров в трубах для сложности hard" />
-    <option name="LAST_COMMIT_MESSAGE" value="-добавлен полноэкранный режим&#10;-изменён баланс режимов сложности &#10;-доработан рандомайзер зазоров в трубах для сложности hard" />
+    <MESSAGE value="-добавлены новые скины на персонажа&#10;-добавлены анимации полета у персонажа" />
+    <option name="LAST_COMMIT_MESSAGE" value="-добавлены новые скины на персонажа&#10;-добавлены анимации полета у персонажа" />
   </component>
 </project>
