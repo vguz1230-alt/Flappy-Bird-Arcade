@@ -2,5 +2,5 @@
     "difficulty": "hard",
     "volume": 50,
     "skin": "bird",
-    "player_name": "Дима Петухов"
+    "player_name": "Дима Петухов1"
 }
