@@ -3,15 +3,13 @@ import arcade.gui
 import json
 from styles import BUTTON_STYLE
 
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
-
 SETTINGS_FILE = "settings.txt"
 
 DEFAULT_SETTINGS = {
     "difficulty": "medium",
     "volume": 80,
-    "skin": "robot"
+    "skin": "robot",
+    "player_name": "Игрок"
 }
 
 class SettingsView(arcade.View):
@@ -25,7 +23,7 @@ class SettingsView(arcade.View):
 
         self.v_box = arcade.gui.UIBoxLayout(
             orientation="vertical",
-            spacing=30,
+            spacing=25,
             align="center"
         )
 
@@ -39,7 +37,28 @@ class SettingsView(arcade.View):
             align="center"
         )
         self.v_box.add(title)
-        self.v_box.add(arcade.gui.UISpace(height=40))
+        self.v_box.add(arcade.gui.UISpace(height=30))
+
+        # Имя игрока
+        name_label = arcade.gui.UILabel(
+            text="Имя игрока:",
+            text_color=arcade.color.WHITE,
+            font_size=28,
+            width=400
+        )
+        self.v_box.add(name_label)
+
+        self.name_input = arcade.gui.UIInputText(
+            text=self.settings.get("player_name", "Игрок"),
+            width=320,
+            height=50,
+            font_size=24,
+            font_name="Arial",
+            text_color=arcade.color.WHITE,
+        )
+        self.name_input.on_change = self.on_name_change
+        self.v_box.add(self.name_input)
+        self.v_box.add(arcade.gui.UISpace(height=10))
 
         difficulty_label = arcade.gui.UILabel(
             text="Сложность игры:",
@@ -65,7 +84,7 @@ class SettingsView(arcade.View):
             btn.on_click = self.on_difficulty_click
             difficulty_box.add(btn)
         self.v_box.add(difficulty_box)
-        self.v_box.add(arcade.gui.UISpace(height=30))
+        self.v_box.add(arcade.gui.UISpace(height=20))
 
         volume_label = arcade.gui.UILabel(
             text=f"Громкость: {self.settings['volume']}%",
@@ -84,7 +103,7 @@ class SettingsView(arcade.View):
         )
         volume_slider.on_change = lambda e: self.on_volume_change(e, volume_label)
         self.v_box.add(volume_slider)
-        self.v_box.add(arcade.gui.UISpace(height=40))
+        self.v_box.add(arcade.gui.UISpace(height=30))
 
         skin_label = arcade.gui.UILabel(
             text="Скин персонажа:",
@@ -111,7 +130,7 @@ class SettingsView(arcade.View):
             btn.on_click = self.on_skin_click
             skin_box.add(btn)
         self.v_box.add(skin_box)
-        self.v_box.add(arcade.gui.UISpace(height=50))
+        self.v_box.add(arcade.gui.UISpace(height=40))
 
         back_button = arcade.gui.UIFlatButton(
             text="НАЗАД",
@@ -134,10 +153,12 @@ class SettingsView(arcade.View):
             return DEFAULT_SETTINGS.copy()
 
     def save_settings(self):
-        print(f"Сохраняем настройки в {SETTINGS_FILE}")
         with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
             json.dump(self.settings, f, indent=4, ensure_ascii=False)
-        print("Настройки сохранены")
+
+    def on_name_change(self, event):
+        self.settings["player_name"] = self.name_input.text.strip() or "Игрок"
+        self.save_settings()
 
     def on_difficulty_click(self, event):
         btn = event.source
@@ -173,13 +194,4 @@ class SettingsView(arcade.View):
 
     def on_draw(self):
         self.clear()
-        arcade.draw_text(
-            "НАСТРОЙКИ",
-            SCREEN_WIDTH // 2,
-            SCREEN_HEIGHT - 120,
-            arcade.color.WHITE,
-            font_size=52,
-            anchor_x="center",
-            font_name="Kenney Future"
-        )
         self.manager.draw()
