@@ -24,6 +24,31 @@ class GameView(arcade.View):
 
         self.load_player_animation()
 
+        self.day_background = None
+        self.night_background = None
+        try:
+            self.day_background = arcade.load_texture("assets/background-day.png")
+            self.night_background = arcade.load_texture("assets/background-night.png")
+        except Exception as e:
+            print("Ошибка загрузки фона:", e)
+
+        self.pipe_texture = None
+        try:
+            self.pipe_texture = arcade.load_texture("assets/pipe-green.png")
+        except Exception as e:
+            print("Ошибка загрузки текстуры трубы:", e)
+
+        self.background_list = arcade.SpriteList()
+        self.background_sprite = arcade.Sprite()
+        self.background_sprite.center_x = self.window.width / 2
+        self.background_sprite.center_y = self.window.height / 2
+        self.background_sprite.width = self.window.width
+        self.background_sprite.height = self.window.height
+        self.background_sprite.texture = self.day_background
+        self.background_list.append(self.background_sprite)
+
+        self.current_background_is_day = True
+
         self.player = arcade.Sprite(scale=0.15)
         self.player.center_x = 250
         self.player.center_y = self.window.height // 2
@@ -156,6 +181,8 @@ class GameView(arcade.View):
         self.current_frame = 0
         self.animation_timer = 0.0
         self.player.texture = self.animation_textures[0]
+        self.current_background_is_day = True
+        self.background_sprite.texture = self.day_background
 
     def on_show_view(self):
         arcade.set_background_color(arcade.color.SKY_BLUE)
@@ -189,6 +216,14 @@ class GameView(arcade.View):
             self.pipe_list.pop(0)
             self.score += 1
             self.score_text.text = str(self.score)
+
+            if self.score % 10 == 0 and self.score > 0:
+                if self.current_background_is_day:
+                    self.current_background_is_day = False
+                    self.background_sprite.texture = self.night_background
+                else:
+                    self.current_background_is_day = True
+                    self.background_sprite.texture = self.day_background
 
         self.last_update_time += delta_time
         if self.last_update_time - self.last_pipe_time > self.pipe_interval:
@@ -224,13 +259,27 @@ class GameView(arcade.View):
 
         gap_y = random.randint(min_y, max_y)
 
-        top_pipe = arcade.SpriteSolidColor(BASE_PIPE_WIDTH, self.window.height, arcade.color.FOREST_GREEN)
-        top_pipe.center_x = self.window.width + 200
-        top_pipe.bottom = gap_y + self.pipe_gap
+        bottom_height = gap_y
+        top_height = self.window.height - (gap_y + self.pipe_gap)
 
-        bottom_pipe = arcade.SpriteSolidColor(BASE_PIPE_WIDTH, self.window.height, arcade.color.FOREST_GREEN)
+        bottom_pipe = arcade.Sprite()
+        if self.pipe_texture:
+            bottom_pipe.texture = self.pipe_texture
+        bottom_pipe.width = BASE_PIPE_WIDTH
+        bottom_pipe.height = bottom_height
         bottom_pipe.center_x = self.window.width + 200
-        bottom_pipe.top = gap_y
+        bottom_pipe.bottom = 0
+        bottom_pipe.center_y = bottom_height / 2
+
+        top_pipe = arcade.Sprite()
+        if self.pipe_texture:
+            top_pipe.texture = self.pipe_texture
+            top_pipe.angle = 180
+        top_pipe.width = BASE_PIPE_WIDTH
+        top_pipe.height = top_height
+        top_pipe.center_x = self.window.width + 200
+        top_pipe.top = self.window.height
+        top_pipe.center_y = self.window.height - top_height / 2
 
         self.pipe_list.append(top_pipe)
         self.pipe_list.append(bottom_pipe)
@@ -272,6 +321,8 @@ class GameView(arcade.View):
 
     def on_draw(self):
         self.clear()
+
+        self.background_list.draw()
 
         if self.game_started and not self.game_over:
             self.pipe_list.draw()
