@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="00232a77-57ce-45dc-a9d9-118b36168fb5" name="Changes" comment="-добавлен полноэкранный режим&#10;-изменён баланс режимов сложности &#10;-доработан рандомайзер зазоров в трубах для сложности hard" />
+    <list default="true" id="00232a77-57ce-45dc-a9d9-118b36168fb5" name="Changes" comment="-добавлен полноэкранный режим&#10;-изменён баланс режимов сложности &#10;-доработан рандомайзер зазоров в трубах для сложности hard&#10;-исправлен дизайн окна настроек">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gamescreen.py" beforeDir="false" afterPath="$PROJECT_DIR$/gamescreen.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/settings.txt" beforeDir="false" afterPath="$PROJECT_DIR$/settings.txt" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -20,6 +24,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "vguz1230-alt"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/vguz1230-alt/Flappy-Bird-Arcade",
+    "accountId": "5f5af0f1-e8a4-4fa4-9424-1f208f1aed87"
+  }
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3
 }</component>
@@ -34,6 +50,7 @@
     "Python.gamescreen.executor": "Run",
     "Python.main.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
     "last_opened_file_path": "C:/Users/vguz1/PycharmProjects/FlappyBird",

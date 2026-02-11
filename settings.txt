@@ -1,5 +1,5 @@
 {
-    "difficulty": "medium",
+    "difficulty": "hard",
     "volume": 68,
-    "skin": "plane"
+    "skin": "bird"
 }

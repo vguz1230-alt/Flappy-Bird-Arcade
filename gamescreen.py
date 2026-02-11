@@ -8,28 +8,34 @@ BASE_PIPE_SPEED = 3.8
 BASE_PIPE_WIDTH = 90
 BASE_PIPE_INTERVAL = 1.9
 
+ANIMATION_SPEED = 0.12
+ANIMATION_FRAME_COUNT = 3
+
+MAX_UP_ANGLE = 35
+MAX_DOWN_ANGLE = -70
+ANGLE_LERP_SPEED = 8.0
+
 class GameView(arcade.View):
     def __init__(self):
         super().__init__()
 
         self.load_settings()
-
         arcade.set_background_color(arcade.color.SKY_BLUE)
 
-        skin_paths = {
-            "robot": ":resources:images/animated_characters/robot/robot_idle.png",
-            "bird": ":resources:images/birds/bluebird-midflap.png",
-            "plane": ":resources:images/space_shooter/playerShip1_blue.png"
-        }
-        skin_path = skin_paths.get(self.skin, skin_paths["robot"])
+        self.load_player_animation()
 
-        self.player = arcade.Sprite(skin_path, scale=0.6)
+        self.player = arcade.Sprite(scale=0.15)
         self.player.center_x = 250
         self.player.center_y = self.window.height // 2
         self.player.velocity_y = 0
+        self.player.texture = self.animation_textures[0]
+        self.player.angle = 0
 
         self.player_list = arcade.SpriteList()
         self.player_list.append(self.player)
+
+        self.current_frame = 0
+        self.animation_timer = 0.0
 
         self.pipe_list = arcade.SpriteList()
 
@@ -84,6 +90,29 @@ class GameView(arcade.View):
             anchor_y="center"
         )
 
+    def load_player_animation(self):
+        base_names = {
+            "bird": "classic",
+            "plane": "plane",
+            "robot": "robot"
+        }
+        skin_base = base_names.get(self.skin, "robot")
+
+        self.animation_textures = []
+        success = True
+        for i in range(1, ANIMATION_FRAME_COUNT + 1):
+            try:
+                filename = f"assets/{skin_base}{i}.png"
+                texture = arcade.load_texture(filename)
+                self.animation_textures.append(texture)
+            except:
+                success = False
+                break
+
+        if not success or len(self.animation_textures) != ANIMATION_FRAME_COUNT:
+            fallback = arcade.load_texture(":resources:images/animated_characters/robot/robot_idle.png")
+            self.animation_textures = [fallback] * ANIMATION_FRAME_COUNT
+
     def load_settings(self):
         try:
             with open("settings.txt", "r", encoding="utf-8") as f:
@@ -98,7 +127,7 @@ class GameView(arcade.View):
         self.gravity = BASE_GRAVITY
 
         diff = settings.get("difficulty", "medium")
-        self.difficulty = diff  # ← добавь эту строку!
+        self.difficulty = diff
 
         if diff == "easy":
             self.pipe_interval = 2.5
@@ -106,7 +135,7 @@ class GameView(arcade.View):
         elif diff == "medium":
             self.pipe_interval = BASE_PIPE_INTERVAL
             self.pipe_gap = 220
-        else:  # hard
+        else:
             self.pipe_interval = 1.5
             self.pipe_gap = 180
 
@@ -116,6 +145,7 @@ class GameView(arcade.View):
     def setup(self):
         self.player.center_y = self.window.height // 2
         self.player.velocity_y = 0
+        self.player.angle = 0
         self.score = 0
         self.score_text.text = "0"
         self.pipe_list.clear()
@@ -123,6 +153,9 @@ class GameView(arcade.View):
         self.last_update_time = 0.0
         self.game_started = False
         self.game_over = False
+        self.current_frame = 0
+        self.animation_timer = 0.0
+        self.player.texture = self.animation_textures[0]
 
     def on_show_view(self):
         arcade.set_background_color(arcade.color.SKY_BLUE)
@@ -133,6 +166,15 @@ class GameView(arcade.View):
 
         self.player.velocity_y -= self.gravity
         self.player.center_y += self.player.velocity_y
+
+        if self.player.velocity_y > 0:
+            target_angle = -35
+        else:
+            fall_factor = min(1.0, abs(self.player.velocity_y) / 12.0)
+            target_angle = 70 * fall_factor
+
+        self.player.angle += (target_angle - self.player.angle) * ANGLE_LERP_SPEED * delta_time
+        self.player.angle = max(-90, min(45, self.player.angle))
 
         if self.player.top < 0 or self.player.bottom > self.window.height:
             self.game_over = True
@@ -153,13 +195,18 @@ class GameView(arcade.View):
             self.spawn_pipe()
             self.last_pipe_time = self.last_update_time
 
+        self.animation_timer += delta_time
+        if self.animation_timer >= ANIMATION_SPEED:
+            self.animation_timer -= ANIMATION_SPEED
+            self.current_frame = (self.current_frame + 1) % ANIMATION_FRAME_COUNT
+            self.player.texture = self.animation_textures[self.current_frame]
+
         self.check_collisions()
 
     def spawn_pipe(self):
         min_y = 140
         max_y = self.window.height - 140 - self.pipe_gap
 
-        # На hard — зазор не может сильно отличаться от предыдущего
         if self.difficulty == "hard" and hasattr(self, 'last_gap_y'):
             half = self.window.height // 2
             prev = self.last_gap_y
@@ -188,8 +235,7 @@ class GameView(arcade.View):
         self.pipe_list.append(top_pipe)
         self.pipe_list.append(bottom_pipe)
 
-        self.last_gap_y = gap_y  # запоминаем
-
+        self.last_gap_y = gap_y
 
     def check_collisions(self):
         for pipe in self.pipe_list:
@@ -227,21 +273,16 @@ class GameView(arcade.View):
     def on_draw(self):
         self.clear()
 
-        # Сначала фон и трубы (нижний слой)
         if self.game_started and not self.game_over:
             self.pipe_list.draw()
 
-        # Птичка поверх труб
         self.player_list.draw()
 
-        # Счёт поверх всего
         self.score_text.draw()
 
-        # Надпись "готов к старту" — тоже поверх
         if not self.game_started:
             self.ready_text.draw()
 
-        # Экран game over — самый верхний слой
         if self.game_over:
             arcade.draw_lbwh_rectangle_filled(
                 0, 0,
