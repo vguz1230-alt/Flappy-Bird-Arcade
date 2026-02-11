@@ -4,8 +4,11 @@ from gamescreen import GameView
 from settings import SettingsView
 from styles import BUTTON_STYLE, DIALOG_YES_STYLE, DIALOG_NO_STYLE
 import json
+import sqlite3
+from datetime import datetime
 
 SCREEN_TITLE = "Главное меню"
+
 
 class MenuView(arcade.View):
     def __init__(self):
@@ -53,20 +56,45 @@ class MenuView(arcade.View):
         self.exit_dialog = None
         self.overlay = None
 
-        # Загружаем имя игрока из файла настроек
         self.player_name = self.load_player_name()
 
-        # Текст имени в нижнем левом углу
         self.name_text = arcade.Text(
             self.player_name,
             x=40,
-            y=60,                     # отступ снизу ~60 пикселей
+            y=60,
             color=arcade.color.WHITE,
             font_size=28,
             font_name="Arial",
             anchor_x="left",
             anchor_y="bottom"
         )
+
+        # Загружаем рекорды + даты
+        self.records = self.load_records_with_dates()
+        self.record_texts = []
+
+        y_offset = self.window.height - 200
+        for diff_ru, data in [("Легко", self.records.get("easy")),
+                              ("Средне", self.records.get("medium")),
+                              ("Сложно", self.records.get("hard"))]:
+            if data and data['score'] is not None:
+                date_str = datetime.fromisoformat(data['date']).strftime("%d.%m.%Y")
+                text = f"{diff_ru}: {data['score']}  ({date_str})"
+            else:
+                text = f"{diff_ru}: —"
+
+            t = arcade.Text(
+                text,
+                x=self.window.width // 2,
+                y=y_offset,
+                color=arcade.color.YELLOW,
+                font_size=26,
+                font_name="Arial",
+                anchor_x="center",
+                anchor_y="center"
+            )
+            self.record_texts.append(t)
+            y_offset -= 50
 
     def load_player_name(self):
         try:
@@ -75,6 +103,35 @@ class MenuView(arcade.View):
                 return settings.get("player_name", "Игрок")
         except (FileNotFoundError, json.JSONDecodeError):
             return "Игрок"
+
+    def load_records_with_dates(self):
+        records = {}
+        conn = sqlite3.connect("game.db")
+        c = conn.cursor()
+
+        for diff in ["easy", "medium", "hard"]:
+            c.execute("""
+                SELECT score, timestamp
+                FROM games 
+                WHERE player_name = ? 
+                  AND difficulty = ?
+                  AND score = (SELECT MAX(score) FROM games 
+                               WHERE player_name = ? AND difficulty = ?)
+                ORDER BY timestamp DESC
+                LIMIT 1
+            """, (self.player_name, diff, self.player_name, diff))
+
+            row = c.fetchone()
+            if row:
+                records[diff] = {
+                    'score': row[0],
+                    'date': row[1]
+                }
+            else:
+                records[diff] = None
+
+        conn.close()
+        return records
 
     def on_click_play(self, event):
         game_view = GameView()
@@ -92,8 +149,10 @@ class MenuView(arcade.View):
         self.v_box.visible = False
 
         overlay = arcade.gui.UIWidget(width=self.window.width, height=self.window.height)
+
         def render_overlay(surface):
             arcade.draw_lbwh_rectangle_filled(0, 0, self.window.width, self.window.height, (0, 0, 0, 180))
+
         overlay.do_render = render_overlay
 
         dialog_content = arcade.gui.UIBoxLayout(
@@ -169,12 +228,36 @@ class MenuView(arcade.View):
     def on_show_view(self):
         arcade.set_background_color(arcade.color.DARK_SLATE_GRAY)
         self.manager.enable()
-        # Обновляем имя при каждом показе меню (на случай изменения в настройках)
+
         self.player_name = self.load_player_name()
         self.name_text.text = self.player_name
 
+        self.records = self.load_records_with_dates()
+        diff_map = {"easy": "Легко", "medium": "Средне", "hard": "Сложно"}
+
+        for i, diff_key in enumerate(["easy", "medium", "hard"]):
+            data = self.records.get(diff_key)
+            if data and data['score'] is not None:
+                date_str = datetime.fromisoformat(data['date']).strftime("%d.%m.%Y")
+                text = f"{diff_map[diff_key]}: {data['score']}  ({date_str})"
+            else:
+                text = f"{diff_map[diff_key]}: —"
+            self.record_texts[i].text = text
+
     def on_hide_view(self):
         self.manager.disable()
+
+    def on_resize(self, width: int, height: int):
+        super().on_resize(width, height)
+
+        self.name_text.x = 40
+        self.name_text.y = 60
+
+        y_offset = height - 200
+        for text in self.record_texts:
+            text.x = width // 2
+            text.y = y_offset
+            y_offset -= 50
 
     def on_draw(self):
         self.clear()
@@ -188,4 +271,7 @@ class MenuView(arcade.View):
             font_name="Kenney Future"
         )
         self.manager.draw()
-        self.name_text.draw()  # ← имя игрока внизу слева
+        self.name_text.draw()
+
+        for text in self.record_texts:
+            text.draw()
