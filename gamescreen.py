@@ -27,8 +27,12 @@ class GameView(arcade.View):
         self.day_background = None
         self.night_background = None
         try:
-            self.day_background = arcade.load_texture("assets/background-day.png")
-            self.night_background = arcade.load_texture("assets/background-night.png")
+            if self.easter_mode:
+                self.day_background = arcade.load_texture("assets/easter_day.png")
+                self.night_background = arcade.load_texture("assets/easter_night.png")
+            else:
+                self.day_background = arcade.load_texture("assets/background-day.png")
+                self.night_background = arcade.load_texture("assets/background-night.png")
         except Exception as e:
             print("Ошибка загрузки фона:", e)
 
@@ -89,6 +93,17 @@ class GameView(arcade.View):
             anchor_y="center"
         )
 
+        self.player_name_text = arcade.Text(
+            self.player_name,
+            40,
+            self.window.height - 60,
+            arcade.color.WHITE,
+            32,
+            font_name="Arial",
+            anchor_x="left",
+            anchor_y="center"
+        )
+
         self.game_started = False
         self.game_over = False
 
@@ -126,6 +141,15 @@ class GameView(arcade.View):
         )
 
     def load_player_animation(self):
+        if self.easter_mode:
+            try:
+                texture = arcade.load_texture("assets/easter_egg.png")
+                self.animation_textures = [texture] * ANIMATION_FRAME_COUNT
+            except:
+                fallback = arcade.load_texture(":resources:images/animated_characters/robot/robot_idle.png")
+                self.animation_textures = [fallback] * ANIMATION_FRAME_COUNT
+            return
+
         base_names = {
             "bird": "classic",
             "plane": "plane",
@@ -156,8 +180,12 @@ class GameView(arcade.View):
             settings = {
                 "difficulty": "medium",
                 "volume": 80,
-                "skin": "robot"
+                "skin": "robot",
+                "player_name": "Игрок"
             }
+
+        self.player_name = settings.get("player_name", "Игрок").strip()
+        self.easter_mode = (self.player_name.lower() == "дима петухов")
 
         self.gravity = BASE_GRAVITY
 
@@ -175,7 +203,11 @@ class GameView(arcade.View):
             self.pipe_gap = 180
 
         self.volume = settings.get("volume", 80)
-        self.skin = settings.get("skin", "robot")
+
+        if not self.easter_mode:
+            self.skin = settings.get("skin", "robot")
+        else:
+            self.skin = "easter_egg"
 
     def setup(self):
         self.player.center_y = self.window.height // 2
@@ -183,6 +215,7 @@ class GameView(arcade.View):
         self.player.angle = 0
         self.score = 0
         self.score_text.text = "0"
+        self.player_name_text.text = self.player_name
         self.pipe_list.clear()
         self.last_pipe_time = 0.0
         self.last_update_time = 0.0
@@ -350,6 +383,7 @@ class GameView(arcade.View):
         self.player_list.draw()
 
         self.score_text.draw()
+        self.player_name_text.draw()
 
         if not self.game_started:
             self.ready_text.draw()
