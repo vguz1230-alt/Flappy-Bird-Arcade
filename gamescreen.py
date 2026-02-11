@@ -2,51 +2,51 @@ import arcade
 import random
 import json
 
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
-
-# Базовые значения
 BASE_GRAVITY = 0.4
 BASE_JUMP_POWER = 9
 BASE_PIPE_SPEED = 3.8
-BASE_PIPE_GAP = 180
 BASE_PIPE_WIDTH = 90
 BASE_PIPE_INTERVAL = 1.9
+
+ANIMATION_SPEED = 0.12
+ANIMATION_FRAME_COUNT = 3
+
+MAX_UP_ANGLE = 35
+MAX_DOWN_ANGLE = -70
+ANGLE_LERP_SPEED = 8.0
 
 class GameView(arcade.View):
     def __init__(self):
         super().__init__()
 
         self.load_settings()
-
         arcade.set_background_color(arcade.color.SKY_BLUE)
 
-        # Выбор скина в зависимости от настроек
-        skin_paths = {
-            "robot": ":resources:images/animated_characters/robot/robot_idle.png",
-            "bird": ":resources:images/birds/bluebird-midflap.png",
-            "plane": ":resources:images/space_shooter/playerShip1_blue.png"
-        }
-        skin_path = skin_paths.get(self.skin, skin_paths["robot"])
+        self.load_player_animation()
 
-        self.player = arcade.Sprite(skin_path, scale=0.6)
+        self.player = arcade.Sprite(scale=0.15)
         self.player.center_x = 250
-        self.player.center_y = SCREEN_HEIGHT // 2
+        self.player.center_y = self.window.height // 2
         self.player.velocity_y = 0
+        self.player.texture = self.animation_textures[0]
+        self.player.angle = 0
 
         self.player_list = arcade.SpriteList()
         self.player_list.append(self.player)
 
+        self.current_frame = 0
+        self.animation_timer = 0.0
+
         self.pipe_list = arcade.SpriteList()
 
-        self.last_pipe_time = 0
+        self.last_pipe_time = 0.0
         self.last_update_time = 0.0
 
         self.score = 0
         self.score_text = arcade.Text(
             "0",
-            SCREEN_WIDTH // 2,
-            SCREEN_HEIGHT - 80,
+            self.window.width // 2,
+            self.window.height - 80,
             arcade.color.WHITE,
             72,
             font_name="Kenney Future",
@@ -59,8 +59,8 @@ class GameView(arcade.View):
 
         self.ready_text = arcade.Text(
             "Нажми ЛКМ или ПРОБЕЛ",
-            SCREEN_WIDTH // 2,
-            SCREEN_HEIGHT // 2,
+            self.window.width // 2,
+            self.window.height // 2,
             arcade.color.WHITE,
             40,
             font_name="Arial",
@@ -70,8 +70,8 @@ class GameView(arcade.View):
 
         self.game_over_text = arcade.Text(
             "ИГРА ОКОНЧЕНА",
-            SCREEN_WIDTH // 2,
-            SCREEN_HEIGHT // 2 + 80,
+            self.window.width // 2,
+            self.window.height // 2 + 80,
             arcade.color.RED,
             60,
             font_name="Kenney Future",
@@ -81,14 +81,37 @@ class GameView(arcade.View):
 
         self.final_score_text = arcade.Text(
             "",
-            SCREEN_WIDTH // 2,
-            SCREEN_HEIGHT // 2,
+            self.window.width // 2,
+            self.window.height // 2,
             arcade.color.WHITE,
             48,
             font_name="Arial",
             anchor_x="center",
             anchor_y="center"
         )
+
+    def load_player_animation(self):
+        base_names = {
+            "bird": "classic",
+            "plane": "plane",
+            "robot": "robot"
+        }
+        skin_base = base_names.get(self.skin, "robot")
+
+        self.animation_textures = []
+        success = True
+        for i in range(1, ANIMATION_FRAME_COUNT + 1):
+            try:
+                filename = f"assets/{skin_base}{i}.png"
+                texture = arcade.load_texture(filename)
+                self.animation_textures.append(texture)
+            except:
+                success = False
+                break
+
+        if not success or len(self.animation_textures) != ANIMATION_FRAME_COUNT:
+            fallback = arcade.load_texture(":resources:images/animated_characters/robot/robot_idle.png")
+            self.animation_textures = [fallback] * ANIMATION_FRAME_COUNT
 
     def load_settings(self):
         try:
@@ -101,32 +124,38 @@ class GameView(arcade.View):
                 "skin": "robot"
             }
 
+        self.gravity = BASE_GRAVITY
+
         diff = settings.get("difficulty", "medium")
+        self.difficulty = diff
+
         if diff == "easy":
-            self.gravity = 0.3
             self.pipe_interval = 2.5
-        elif diff == "hard":
-            self.gravity = 0.6
-            self.pipe_interval = 1.5
-        else:
-            self.gravity = BASE_GRAVITY
+            self.pipe_gap = 240
+        elif diff == "medium":
             self.pipe_interval = BASE_PIPE_INTERVAL
+            self.pipe_gap = 220
+        else:
+            self.pipe_interval = 1.5
+            self.pipe_gap = 180
 
         self.volume = settings.get("volume", 80)
         self.skin = settings.get("skin", "robot")
 
-        print(f"Загружены настройки: сложность={diff}, громкость={self.volume}, скин={self.skin}")
-
     def setup(self):
-        self.player.center_y = SCREEN_HEIGHT // 2
+        self.player.center_y = self.window.height // 2
         self.player.velocity_y = 0
+        self.player.angle = 0
         self.score = 0
         self.score_text.text = "0"
         self.pipe_list.clear()
-        self.last_pipe_time = 0
+        self.last_pipe_time = 0.0
         self.last_update_time = 0.0
         self.game_started = False
         self.game_over = False
+        self.current_frame = 0
+        self.animation_timer = 0.0
+        self.player.texture = self.animation_textures[0]
 
     def on_show_view(self):
         arcade.set_background_color(arcade.color.SKY_BLUE)
@@ -138,7 +167,16 @@ class GameView(arcade.View):
         self.player.velocity_y -= self.gravity
         self.player.center_y += self.player.velocity_y
 
-        if self.player.top < 0 or self.player.bottom > SCREEN_HEIGHT:
+        if self.player.velocity_y > 0:
+            target_angle = -35
+        else:
+            fall_factor = min(1.0, abs(self.player.velocity_y) / 12.0)
+            target_angle = 70 * fall_factor
+
+        self.player.angle += (target_angle - self.player.angle) * ANGLE_LERP_SPEED * delta_time
+        self.player.angle = max(-90, min(45, self.player.angle))
+
+        if self.player.top < 0 or self.player.bottom > self.window.height:
             self.game_over = True
             self.final_score_text.text = f"Счёт: {self.score}"
             return
@@ -157,21 +195,47 @@ class GameView(arcade.View):
             self.spawn_pipe()
             self.last_pipe_time = self.last_update_time
 
+        self.animation_timer += delta_time
+        if self.animation_timer >= ANIMATION_SPEED:
+            self.animation_timer -= ANIMATION_SPEED
+            self.current_frame = (self.current_frame + 1) % ANIMATION_FRAME_COUNT
+            self.player.texture = self.animation_textures[self.current_frame]
+
         self.check_collisions()
 
     def spawn_pipe(self):
-        gap_y = random.randint(140, SCREEN_HEIGHT - 140 - BASE_PIPE_GAP)
+        min_y = 140
+        max_y = self.window.height - 140 - self.pipe_gap
 
-        top_pipe = arcade.SpriteSolidColor(BASE_PIPE_WIDTH, SCREEN_HEIGHT, arcade.color.FOREST_GREEN)
-        top_pipe.center_x = SCREEN_WIDTH + 200
-        top_pipe.bottom = gap_y + BASE_PIPE_GAP
+        if self.difficulty == "hard" and hasattr(self, 'last_gap_y'):
+            half = self.window.height // 2
+            prev = self.last_gap_y
 
-        bottom_pipe = arcade.SpriteSolidColor(BASE_PIPE_WIDTH, SCREEN_HEIGHT, arcade.color.FOREST_GREEN)
-        bottom_pipe.center_x = SCREEN_WIDTH + 200
+            if prev < half:
+                min_y = 140
+                max_y = half - self.pipe_gap // 2
+            else:
+                min_y = half + self.pipe_gap // 2
+                max_y = self.window.height - 140 - self.pipe_gap
+
+            if min_y >= max_y:
+                min_y = 140
+                max_y = self.window.height - 140 - self.pipe_gap
+
+        gap_y = random.randint(min_y, max_y)
+
+        top_pipe = arcade.SpriteSolidColor(BASE_PIPE_WIDTH, self.window.height, arcade.color.FOREST_GREEN)
+        top_pipe.center_x = self.window.width + 200
+        top_pipe.bottom = gap_y + self.pipe_gap
+
+        bottom_pipe = arcade.SpriteSolidColor(BASE_PIPE_WIDTH, self.window.height, arcade.color.FOREST_GREEN)
+        bottom_pipe.center_x = self.window.width + 200
         bottom_pipe.top = gap_y
 
         self.pipe_list.append(top_pipe)
         self.pipe_list.append(bottom_pipe)
+
+        self.last_gap_y = gap_y
 
     def check_collisions(self):
         for pipe in self.pipe_list:
@@ -222,7 +286,7 @@ class GameView(arcade.View):
         if self.game_over:
             arcade.draw_lbwh_rectangle_filled(
                 0, 0,
-                SCREEN_WIDTH, SCREEN_HEIGHT,
+                self.window.width, self.window.height,
                 (0, 0, 0, 140)
             )
             self.game_over_text.draw()
@@ -230,11 +294,11 @@ class GameView(arcade.View):
 
             arcade.draw_text(
                 "ЛКМ — Перезапустить",
-                SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 60,
+                self.window.width // 2, self.window.height // 2 - 60,
                 arcade.color.WHITE, 28, anchor_x="center"
             )
             arcade.draw_text(
                 "ESC / ENTER — В меню",
-                SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 100,
+                self.window.width // 2, self.window.height // 2 - 100,
                 arcade.color.WHITE, 28, anchor_x="center"
             )
