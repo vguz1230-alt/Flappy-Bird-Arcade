@@ -1,5 +1,6 @@
 {
     "difficulty": "hard",
-    "volume": 68,
-    "skin": "bird"
+    "volume": 50,
+    "skin": "bird",
+    "player_name": "Дима Петухов"
 }

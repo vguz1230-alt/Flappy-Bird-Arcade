@@ -1,7 +1,39 @@
 import arcade
 from mainmenu import MenuView
 from gamescreen import GameView
+import sqlite3
 
+
+def init_database():
+    conn = sqlite3.connect("game.db")
+    c = conn.cursor()
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS games (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_name TEXT NOT NULL,
+            score INTEGER NOT NULL,
+            difficulty TEXT DEFAULT 'medium',          -- ← добавлен
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS settings_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_name TEXT NOT NULL,
+            difficulty TEXT NOT NULL,
+            skin TEXT NOT NULL,
+            date TEXT NOT NULL
+        )
+    ''')
+
+    conn.commit()
+    conn.close()
+
+
+# Вызови один раз при запуске
+init_database()
 SCREEN_TITLE = "Flappy Bird"
 
 def main():
