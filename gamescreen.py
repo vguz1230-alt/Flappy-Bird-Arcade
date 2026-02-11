@@ -38,6 +38,16 @@ class GameView(arcade.View):
         except Exception as e:
             print("Ошибка загрузки текстуры трубы:", e)
 
+        try:
+            self.sound_wing = arcade.load_sound("assets/audio_wing.wav")
+            self.sound_point = arcade.load_sound("assets/audio_point.wav")
+            self.sound_hit = arcade.load_sound("assets/audio_hit.wav")
+        except Exception as e:
+            print("Ошибка загрузки звуков:", e)
+            self.sound_wing = None
+            self.sound_point = None
+            self.sound_hit = None
+
         self.background_list = arcade.SpriteList()
         self.background_sprite = arcade.Sprite()
         self.background_sprite.center_x = self.window.width / 2
@@ -206,6 +216,8 @@ class GameView(arcade.View):
         if self.player.top < 0 or self.player.bottom > self.window.height:
             self.game_over = True
             self.final_score_text.text = f"Счёт: {self.score}"
+            if self.sound_hit:
+                arcade.play_sound(self.sound_hit, volume=self.volume / 100)
             return
 
         for pipe in self.pipe_list:
@@ -216,6 +228,8 @@ class GameView(arcade.View):
             self.pipe_list.pop(0)
             self.score += 1
             self.score_text.text = str(self.score)
+            if self.sound_point:
+                arcade.play_sound(self.sound_point, volume=self.volume / 100)
 
             if self.score % 10 == 0 and self.score > 0:
                 if self.current_background_is_day:
@@ -291,6 +305,8 @@ class GameView(arcade.View):
             if arcade.check_for_collision(self.player, pipe):
                 self.game_over = True
                 self.final_score_text.text = f"Счёт: {self.score}"
+                if self.sound_hit:
+                    arcade.play_sound(self.sound_hit, volume=self.volume / 100)
                 break
 
     def on_key_press(self, symbol: int, modifiers: int):
@@ -305,6 +321,8 @@ class GameView(arcade.View):
 
         if symbol in (arcade.key.SPACE, arcade.key.UP):
             self.player.velocity_y = BASE_JUMP_POWER
+            if self.sound_wing:
+                arcade.play_sound(self.sound_wing, volume=self.volume / 100)
 
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
         if self.game_over:
@@ -318,6 +336,8 @@ class GameView(arcade.View):
 
         if button == arcade.MOUSE_BUTTON_LEFT:
             self.player.velocity_y = BASE_JUMP_POWER
+            if self.sound_wing:
+                arcade.play_sound(self.sound_wing, volume=self.volume / 100)
 
     def on_draw(self):
         self.clear()
